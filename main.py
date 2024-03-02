@@ -1,29 +1,62 @@
+import json
 import uuid
 
+import requests
+import uvicorn
 from attr import dataclass
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi import Request
 from fastapi.responses import Response
+from pydantic import BaseModel
 
 app = FastAPI()
 
-userIDMapper = {
-    "MALE": "1",
-    "FEMALE": "2",
-}
+# class ImageData(BaseModel):
+#     file_image: dict
 
 @app.post("/getUserId")
-def getUserId():
+async def getUserId(file: UploadFile = File(...)):
     # Face     Recognition     model -> Used     to     identify     which
     # voice     to     use
-    gender = "MALE"
+    picpurify_url = 'https://www.picpurify.com/analyse/1.1'
+    contents = await file.read()
+    payload = {
+        "API_KEY": "q2RrZaG7nhIboOiLXvtdjIQ3nw5gAM3p",
+        "task": "face_gender_age_detection"
+    }
+    if not file.content_type.startswith("image"):
+        return Response(
+            content="Uploaded file is not an image.",
+            status_code=400,
+        )
+    try:
+        result_data = requests.post(picpurify_url, files={"file_image": contents},
+                                    params=payload)
+        result_data.raise_for_status()
+        result_json = result_data.json()
+        # tmp=json.dumps(result_json) #input: dict -> output: string
+        # rs=json.loads(tmp) #input: string -> output: dict
+        gender = result_json['face_detection']['results'][0]['gender']['decision']
+        age = result_json['face_detection']['results'][0]['age_majority']['decision']
+        user_id = 0
+        match (gender, age):
+            case ("male", "major"):
+                user_id = 11
+            case ("male", "minor"):
+                user_id = 12
+            case ("female", "major"):
+                user_id = 21
+            case ("female", "minor"):
+                user_id = 22
+        return Response(
+            content=str({"userId": user_id}),
+            status_code=200,
+        )
+    except requests.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Error sending image to API: {str(e)}")
 
     # Generate     voice     embedding and load
     # to     GPU     first
-
-
-    # Return  user   id
-    return {"userId": userIDMapper[gender]}
 
 
 @app.get("/tts")
@@ -32,7 +65,7 @@ async def text_to_speech(req: Request):
     payload = None
     wav_out_path = None
 
-     # userId = req.headers.get("X-UserID")
+    # userId = req.headers.get("X-UserID")
 
     # try:
     #     headers = req.headers
