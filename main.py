@@ -8,16 +8,23 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi import Request
 from fastapi.responses import Response
 from pydantic import BaseModel
+from fam.llm.fast_inference import TTS
 
+tts = TTS()
 app = FastAPI()
+
+audio_id = {
+    "11": "voices/male1.mp3",
+    "12": "voices/male2.mp3",
+    "21": "voices/female1.mp3",
+    "22": "voices/female2.mp3"
+}
 
 # class ImageData(BaseModel):
 #     file_image: dict
 
 @app.post("/getUserId")
 async def getUserId(file: UploadFile = File(...)):
-    # Face     Recognition     model -> Used     to     identify     which
-    # voice     to     use
     picpurify_url = 'https://www.picpurify.com/analyse/1.1'
     contents = await file.read()
     payload = {
@@ -48,56 +55,21 @@ async def getUserId(file: UploadFile = File(...)):
                 user_id = 21
             case ("female", "minor"):
                 user_id = 22
-        return Response(
-            content=str({"userId": user_id}),
-            status_code=200,
-        )
+        return {
+            "user_id": user_id
+        }
     except requests.RequestException as e:
         raise HTTPException(status_code=500, detail=f"Error sending image to API: {str(e)}")
 
-    # Generate     voice     embedding and load
-    # to     GPU     first
-
+class TTSRequest(BaseModel):
+    key: str
+    user_id: str
 
 @app.get("/tts")
-async def text_to_speech(req: Request):
-    audiodata = await req.body()
-    payload = None
-    wav_out_path = None
-
-    # userId = req.headers.get("X-UserID")
-
-    # try:
-    #     headers = req.headers
-    #     payload = headers["X-Payload"]
-    #     payload = json.loads(payload)
-    #     tts_req = TTSRequest(**payload)
-
-    # Get the matched referecent path from the user id
-
-    # voice_reference_path = get_voice_reference_path(user_id)
-
-    #     wav_out_path = GlobalState.tts.synthesise(
-    #         text=tts_req.text,
-    #         # spk_ref_path=voice_reference_path,
-    #         top_p=tts_req.top_p,
-    #         guidance_scale=tts_req.guidance,
-    #     )
-    #
-    #     with open(wav_out_path, "rb") as f:
-    #         return Response(content=f.read(), media_type="audio/wav")
-    # except Exception as e:
-    #     # traceback_str = "".join(traceback.format_tb(e.__traceback__))
-    #     logger.exception(f"Error processing request {payload}")
-    #     return Response(
-    #         content="Something went wrong. Please try again in a few mins or contact us on Discord",
-    #         status_code=500,
-    #     )
-    # finally:
-    #     if wav_out_path is not None:
-    #         Path(wav_out_path).unlink(missing_ok=True
-    # return Response(content=f.read(), media_type="audio/wav")
-    return Response(
-        content="Something went wrong. Please try again in a few mins or contact us on Discord",
-        status_code=500,
-    )
+async def text_to_speech(req: TTSRequest):
+    userId = req.user_id
+    audio_path = audio_id[userId]
+    output_file = tts.synthesise(
+        req.key,
+        spk_ref_path= audio_path)
+    return output_file
