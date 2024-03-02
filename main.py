@@ -8,13 +8,8 @@ from fastapi.responses import Response
 app = FastAPI()
 
 
-@dataclass(frozen=True)
-class TTSRequest:
-    text: str
-
-
 @app.post("/getUserId")
-def read_root():
+def getUserId():
     # Face     Recognition     model -> Used     to     identify     which
     # voice     to     use
 
@@ -25,13 +20,13 @@ def read_root():
     return {"userId": uuid.uuid4()}
 
 
-@app.post("tts")
+@app.get("/tts")
 async def text_to_speech(req: Request):
     audiodata = await req.body()
     payload = None
     wav_out_path = None
 
-    # req.headers.get("X-UserID")
+     # userId = req.headers.get("X-UserID")
 
     # try:
     #     headers = req.headers
