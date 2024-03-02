@@ -7,17 +7,23 @@ from fastapi.responses import Response
 
 app = FastAPI()
 
+userIDMapper = {
+    "MALE": "1",
+    "FEMALE": "2",
+}
 
 @app.post("/getUserId")
 def getUserId():
     # Face     Recognition     model -> Used     to     identify     which
     # voice     to     use
+    gender = "MALE"
 
     # Generate     voice     embedding and load
     # to     GPU     first
 
+
     # Return  user   id
-    return {"userId": uuid.uuid4()}
+    return {"userId": userIDMapper[gender]}
 
 
 @app.get("/tts")
