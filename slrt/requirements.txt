@@ -1,0 +1,16 @@
+# azureml==0.2.7
+# azureml_core==1.44.0
+Lintel==0.1.0
+matplotlib==3.7.5
+numpy==1.24.4
+opencv-python
+Pillow==9.2.0
+PyYAML==6.0
+scikit_learn==1.1.2
+timm==0.4.12
+torch==1.9.0
+torchvision==0.10.0
+tqdm==4.62.3
+transformers==4.11.3
+wandb
+tensorboard
